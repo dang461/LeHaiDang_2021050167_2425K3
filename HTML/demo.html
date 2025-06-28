@@ -2,30 +2,45 @@
 <html>
 <head>
 <style>
-table, th, td {
+p.ex1 {
   border: 1px solid black;
-  border-collapse: collapse;
+  outline-style: solid;
+  outline-color: red;
+  outline-width: thin;
+}
+
+p.ex2 {
+  border: 1px solid black;
+  outline-style: solid;
+  outline-color: red;
+  outline-width: medium;
+}
+
+p.ex3 {
+  border: 1px solid black;
+  outline-style: solid;
+  outline-color: red;
+  outline-width: thick;
+}
+
+p.ex4 {
+  border: 1px solid black;
+  outline-style: solid;
+  outline-color: red;
+  outline-width: 4px;
 }
 </style>
 </head>
 <body>
 
-<h2>Cell that spans two rows</h2>
-<p>To make a cell span more than one row, use the rowspan attribute.</p>
+<h2>The outline-width Property</h2>
 
-<table style="width:100%">
-  <tr>
-    <th>Name</th>
-    <td>Jill</td>
-  </tr>
-  <tr>
-    <th rowspan="2">Phone</th>
-    <td>555-1234</td>
-  </tr>
-  <tr>
-    <td>555-8745</td>
-  </tr>
-</table>
+<p class="ex1">A thin outline.</p>
+<p class="ex2">A medium outline.</p>
+<p class="ex3">A thick outline.</p>
+<p class="ex4">A 4px thick outline.</p>
+
 </body>
 </html>
+
 
