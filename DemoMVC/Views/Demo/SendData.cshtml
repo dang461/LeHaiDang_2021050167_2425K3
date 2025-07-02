@@ -1,0 +1,9 @@
+@{
+    Layout = "_Layout";
+}
+<h2>Nhap du lieu: @ViewBag.Message</h2>
+<form asp-action="SendData">
+    <input type="text" name="FullName" placeholder="Full name is required!" required />
+    <input type="text" name="Address" placeholder="Nhap dia chi cua sinh vien" />
+    <input type="submit" value="Gui du lieu" />
+</form>
