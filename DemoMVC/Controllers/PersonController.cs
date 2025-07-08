@@ -1,0 +1,111 @@
+using DemoMVC.Data;
+using DemoMVC.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+namespace DemoMVC.Controllers{
+    public class PersonController : Controller
+    {
+        private readonly ApplicationDbcontext _context;
+        public PersonController(ApplicationDbcontext context){
+            _context=context;
+        }
+        public async Task<IActionResult> Index(){
+            var model = await _context.Person.ToListAsync();
+            return View(model);
+        }
+           public async Task<IActionResult> Details(string id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var perSon = await _context.Person
+                .FirstOrDefaultAsync(m => m.PersonId == id);
+            if (perSon == null)
+            {
+                return NotFound();
+            }
+
+            return View(perSon);
+        }
+        public IActionResult Create()
+        {
+            return View();
+        }
+        [HttpPost]
+         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create ([Bind("PersonId,FullName,Address")] Person person){
+            if(ModelState.IsValid){
+                _context.Add(person);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            return View(person);
+        }
+        public async Task<IActionResult> Edit(String id)
+        {
+            if (id == null || _context.Person == null)
+            {
+                return NotFound();
+            }
+            var person = await _context.Person.FindAsync(id);
+            if (person == null)
+            {
+                return NotFound();
+            }
+            return View();
+  }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(String id, [Bind("PersonId,FullName,Address")] Person person){
+            if (id !=person.PersonId){
+                return NotFound();
+            }
+            if (ModelState.IsValid){
+                try{
+                    _context.Update(person);
+                    await _context.SaveChangesAsync();
+                }catch(DbUpdateConcurrencyException){
+                    if (!PersonExists(person.PersonId)){
+                        return NotFound();
+                    }else{
+                        throw;
+                    }
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            return View();
+        }
+
+        private bool PersonExists(string id)
+        {
+            return (_context.Person?.Any(e=>e.PersonId==id)).GetValueOrDefault();
+        }
+        public async Task<IActionResult> Delete(String id)
+        {
+            if(id==null || _context.Person == null){
+                return NotFound();
+            }
+            var person = await _context.Person.FirstOrDefaultAsync(m => m.PersonId == id);
+            if (person ==  null){
+                return NotFound();
+            }
+            return View();
+        }
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConFirmed(String id){
+            if(_context.Person==null){
+                return Problem ("Entity set 'ApplicationDbcontext.Person' is null." );
+            }
+            var person= await _context.Person.FindAsync(id);
+            if (person !=null)
+            {
+                _context.Person.Remove(person);
+            }
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
+    }
+}
