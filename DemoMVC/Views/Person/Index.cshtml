@@ -1,47 +1,42 @@
 @model IEnumerable<DemoMVC.Models.Person>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Danh sách Person";
 }
 
-<h1>Index</h1>
+<h2>@ViewData["Title"]</h2>
 
 <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create" class="btn btn-success">Thêm mới</a>
 </p>
-<table class="table">
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+
+<table class="table table-bordered">
     <thead>
         <tr>
-            <th>
-                <labe>PersonId: </labe>
-            </th>
-            <th>
-                <label>Họ Tên: </label>
-            </th>
-            <th>
-                <label>Địa Chỉ: </label>
-            </th>
-            <th></th>
+            <th>Mã</th>
+            <th>Họ tên</th>
+            <th>Địa chỉ</th>
+            <th>Hành động</th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
+    @foreach (var item in Model)
+    {
         <tr>
+            <td>@item.PersonId</td>
+            <td>@item.FullName</td>
+            <td>@item.Address</td>
             <td>
-                @Html.DisplayFor(modelItem => item.PersonId)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.FullName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Address)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.PersonId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.PersonId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.PersonId">Delete</a>
+                <a asp-action="Details" asp-route-id="@item.PersonId" class="btn btn-info btn-sm">Chi tiết</a>
+                <a asp-action="Edit" asp-route-id="@item.PersonId" class="btn btn-warning btn-sm">Sửa</a>
+                <a asp-action="Delete" asp-route-id="@item.PersonId" class="btn btn-danger btn-sm">Xoá</a>
             </td>
         </tr>
-}
+    }
     </tbody>
 </table>
