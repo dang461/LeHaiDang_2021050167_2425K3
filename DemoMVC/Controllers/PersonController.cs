@@ -1,12 +1,16 @@
 using DemoMVC.Data;
 using DemoMVC.Models;
+using DemoMVC.Models.Process;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 namespace DemoMVC.Controllers
 {
     public class PersonController : Controller
     {
         private readonly ApplicationDbcontext _context;
+        private ExcelProcess _excelProcess = new ExcelProcess();
+
         public PersonController(ApplicationDbcontext context)
         {
             _context = context;
@@ -34,49 +38,21 @@ namespace DemoMVC.Controllers
         }
         public IActionResult Create()
         {
-            bool isFirstPerson = !_context.Person.Any();
-
-            var person = new Person
-            {
-                PersonId = isFirstPerson ? "" : GenerateNewPersonId()
-            };
-
-            ViewBag.IsFirstPerson = isFirstPerson;
-            return View(person);
+            return View();
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
         [HttpPost]
-    public async Task<IActionResult> Create([Bind("PersonId,FullName,Address")] Person person)
-    {
-        bool isFirstPerson = !_context.Person.Any();
-
-        if (isFirstPerson)
+       public async Task<IActionResult> Create([Bind("Id,FullName,Address")] Person person)
         {
-          
-            if (string.IsNullOrWhiteSpace(person.PersonId) || !System.Text.RegularExpressions.Regex.IsMatch(person.PersonId, @"^PS\d+$"))
+            if (ModelState.IsValid)
             {
-                ModelState.AddModelError("PersonId", "PersonId phải bắt đầu bằng 'PS' và theo sau là số, ví dụ: PS01 hoặc PS001.");
+                _context.Add(person);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
             }
+            return View(person);
         }
-        else
-        {
-            
-            person.PersonId = GenerateNewPersonId();
-        }
-
-        if (ModelState.IsValid)
-        {
-            _context.Add(person);
-            await _context.SaveChangesAsync();
-
-            TempData["Message"] = "Thêm mới thành công!";
-            return RedirectToAction(nameof(Index));
-        }
-
-        ViewBag.IsFirstPerson = isFirstPerson;
-        return View(person);
-    }
 
         public async Task<IActionResult> Edit(String id)
         {
@@ -155,30 +131,62 @@ namespace DemoMVC.Controllers
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
-        private string GenerateNewPersonId()
+      
+         [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Upload(IFormFile file)
         {
-            var lastPerson = _context.Person
-                .OrderByDescending(p => p.PersonId)
-                .FirstOrDefault();
-
-            if (lastPerson == null || string.IsNullOrEmpty(lastPerson.PersonId))
-                return "PS01"; 
-
-            string lastId = lastPerson.PersonId;
-
-           
-            string prefix = new string(lastId.TakeWhile(char.IsLetter).ToArray());
-            string numberPart = new string(lastId.SkipWhile(char.IsLetter).ToArray());
-
-            if (string.IsNullOrEmpty(numberPart)) numberPart = "0";
-
-            int nextNumber = int.Parse(numberPart) + 1;
-
-          
-            string formattedNumber = nextNumber.ToString("D" + numberPart.Length);
-
-            return prefix + formattedNumber;
+            if (file != null)
+            {
+                string fileExtension = Path.GetExtension(file.FileName);
+                if (fileExtension != ".xls" && fileExtension != ".xlsx")
+                {
+                    ModelState.AddModelError("", "Please choose excel file to upload!");
+                }
+                else
+                {
+                    //rename file when upload to server
+                    var fileName = DateTime.Now.ToShortTimeString() + fileExtension;
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory() + "/Uploads/Excels" + fileName);
+                    var fileLocation = new FileInfo(filePath).ToString();
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    //save file to server
+                    await file.CopyToAsync(stream);
+                    var dt = _excelProcess.ExcelToDataTable(fileLocation);
+                    for (int i = 0; i < dt.Rows.Count; i++)
+                    {
+                        var ps = new Person();
+                        ps.PersonId = dt.Rows[i][0].ToString();
+                        ps.FullName = dt.Rows[i][1].ToString();
+                        ps.Address = dt.Rows[i][2].ToString();
+                        _context.Add(ps);
+                    }
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+            return View(nameof(Create));
         }
+        public async Task<IActionResult> Download()
+        {
+
+            var fileName = Guid.NewGuid().ToString() + ".xlsx";
+            using ExcelPackage excelPackage = new();
+            ExcelWorksheet excelWorksheet = excelPackage.Workbook.Worksheets.Add("Sheet1");
+            excelWorksheet.Cells["A1"].Value = "PersonId";
+            excelWorksheet.Cells["B1"].Value = "FullName";
+            excelWorksheet.Cells["C1"].Value = "Address";
+            //get all person from database
+            var personList = await _context.Person.ToListAsync();
+            //fill data to worksheet
+            excelWorksheet.Cells["A2"].LoadFromCollection(personList, true);
+
+            var stream = new MemoryStream();
+            excelPackage.SaveAs(stream);
+            stream.Position = 0;
+            return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+        
 
     }
 }
